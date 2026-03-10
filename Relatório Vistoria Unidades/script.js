@@ -25,6 +25,7 @@ function filesToDataUrls(fileList){
 
 // ---------- Estado da Aplicação ----------
 let setores = [];
+let editIndex = -1; // -1 significa que estamos adicionando um novo setor
 
 // ---------- Elementos ----------
 const inpUnidade = document.getElementById("inpUnidade");
@@ -53,9 +54,9 @@ function renderSectorsList() {
     sectorsList.innerHTML = "";
     setores.forEach((setor, index) => {
         const item = document.createElement("div");
-        item.className = "sector-item";
+        item.className = `sector-item ${editIndex === index ? 'editing' : ''}`;
         item.innerHTML = `
-            <span>${setor.nome}</span>
+            <span onclick="editSector(${index})" style="cursor:pointer;" title="Clique para editar">${setor.nome}</span>
             <div class="sector-actions">
                 <button class="action-btn" onclick="moveSector(${index}, -1)" title="Subir">
                     <i class="fas fa-chevron-up"></i>
@@ -106,8 +107,29 @@ function renderDocStack() {
 
 // ---------- Ações ----------
 
+function editSector(index) {
+    editIndex = index;
+    const setor = setores[index];
+    
+    // Carregar dados nos inputs
+    inpSetor.value = setor.nome;
+    inpDesc.value = setor.desc;
+    
+    // Atualizar o botão e o título da seção (opcional, mas ajuda no feedback)
+    btnAddSetor.innerHTML = '<i class="fas fa-save"></i> Salvar alterações';
+    btnAddSetor.classList.add('editing-mode');
+    
+    fileHint.textContent = setor.imgs.length > 0 ? `${setor.imgs.length} imagem(ns) salva(s) (selecione novas para trocar)` : "Nenhuma imagem salva";
+    
+    renderSectorsList();
+    
+    // Rolar para o topo do formulário de setor para facilitar a edição
+    inpSetor.focus();
+}
+
 function removeSector(index) {
     if (confirm("Deseja realmente excluir este setor?")) {
+        if (editIndex === index) resetForm();
         setores.splice(index, 1);
         renderSectorsList();
         renderDocStack();
@@ -120,9 +142,25 @@ function moveSector(index, direction) {
         const temp = setores[index];
         setores[index] = setores[newIndex];
         setores[newIndex] = temp;
+        
+        // Se o item sendo movido era o que estava em edição, atualiza o index
+        if (editIndex === index) editIndex = newIndex;
+        else if (editIndex === newIndex) editIndex = index;
+        
         renderSectorsList();
         renderDocStack();
     }
+}
+
+function resetForm() {
+    editIndex = -1;
+    inpSetor.value = "";
+    inpDesc.value = "";
+    inpImgs.value = "";
+    fileHint.textContent = "Nenhum arquivo selecionado";
+    btnAddSetor.innerHTML = '<i class="fas fa-plus"></i> Adicionar setor';
+    btnAddSetor.classList.remove('editing-mode');
+    renderSectorsList();
 }
 
 // ---------- Eventos ----------
@@ -146,17 +184,23 @@ btnAddSetor.addEventListener("click", async () => {
         return;
     }
 
-    const imgs = await filesToDataUrls(inpImgs.files);
+    let imgs = [];
+    if (inpImgs.files.length > 0) {
+        imgs = await filesToDataUrls(inpImgs.files);
+    } else if (editIndex !== -1) {
+        // Se estiver editando e não selecionou novas imagens, mantém as antigas
+        imgs = setores[editIndex].imgs;
+    }
     
-    setores.push({ nome, desc, imgs });
+    if (editIndex === -1) {
+        // Adicionar novo
+        setores.push({ nome, desc, imgs });
+    } else {
+        // Salvar edição
+        setores[editIndex] = { nome, desc, imgs };
+    }
     
-    // Limpar campos
-    inpSetor.value = "";
-    inpDesc.value = "";
-    inpImgs.value = "";
-    fileHint.textContent = "Nenhum arquivo selecionado";
-    
-    renderSectorsList();
+    resetForm();
     renderDocStack();
 });
 
@@ -166,7 +210,6 @@ btnPrint.addEventListener("click", () => {
 
 // Inicialização
 document.addEventListener("DOMContentLoaded", () => {
-    // Definir data de hoje no input
     const hoje = new Date().toISOString().split('T')[0];
     inpData.value = hoje;
     txtData.textContent = formatarDataPtBR(hoje);
