@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Padronização de Planilha - Quebra de Transbordo</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Ícones para o botão de voltar -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Cabeçalho com botão de voltar à esquerda e título centralizado -->
+    <header>
+        <a href="javascript:history.back()" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+        <h1>Padronização de Planilha - Quebra de Transbordo</h1>
+    </header>
+
+    <div class="wrap">
+        <div class="card">
+            <div class="sub">
+                Importe o CSV do sistema (separador “;”), clique em <b>Iniciar limpeza</b> e baixe os arquivos resultantes.
+            </div>
+
+            <div class="row">
+                <input id="file" type="file" accept=".csv" />
+                <button id="start" class="primary" disabled>
+                    <i class="fas fa-broom" style="margin-right: 8px;"></i> Iniciar limpeza
+                </button>
+                
+                <div class="progress" aria-hidden="true">
+                    <div id="bar" class="bar"></div>
+                </div>
+            </div>
+
+            <div id="status" class="status">Aguardando arquivo…</div>
+
+            <div class="row row-downloads">
+                <button id="dlXlsx" class="success" disabled>
+                    <i class="fas fa-file-excel" style="margin-right: 8px;"></i> Baixar Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Referência ao script.js (não alterado) -->
+    <script src="script.js"></script>
+    
+</body>
+</html>
