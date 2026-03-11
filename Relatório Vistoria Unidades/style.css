@@ -254,10 +254,64 @@ footer.page-footer {
 
 /* Impressão */
 @media print {
-    header.main-header, .sidebar { display: none !important; }
-    .main-container { margin-top: 0; }
-    .workspace { margin-left: 0; padding: 0; }
-    .page, .doc-page { box-shadow: none; margin: 0; page-break-after: always; }
-    .page::before, .doc-page::before { opacity: 1; }
+  /* Define A4 e remove margens do navegador/driver */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  /* Some com UI fora do conteúdo */
+  header.main-header, .sidebar { display: none !important; }
+  .main-container { margin-top: 0 !important; }
+  .workspace { margin-left: 0 !important; padding: 0 !important; }
+
+  /* Zera espaços entre capa e documento */
+  .canvas { margin-bottom: 0 !important; }
+  .doc-stack { margin-top: 0 !important; }
+
+  /* IMPORTANTE: evitar o "vazamento" para a folha seguinte */
+  .page, .doc-page {
+    width: 210mm;
+    /* Reduzimos um tiquinho a altura útil para cortar o transbordo (ajuste fino) */
+    height: calc(297mm - 0.6mm);
+    margin: 0;
+    box-shadow: none !important;
+
+    /* Use a propriedade moderna; é mais estável que page-break-* em Chromium */
+    break-after: page;
+    break-inside: avoid;
+
+    /* Garante que nada pinte fora da caixa da página */
+    overflow: hidden;
+    contain: paint; /* evita pintura extrapolada do ::before em alguns drivers */
+  }
+
+  /* O fundo está em ::before com inset:0; Encolhemos 0.3mm em cima/baixo
+     para eliminar qualquer fração que pudesse ir para outra folha. */
+  .page::before, .doc-page::before {
+    /* antes: inset: 0; */
+    position: absolute;
+    top: 0.3mm; bottom: 0.3mm; left: 0; right: 0;
+    /* Mantém a escala visual praticamente idêntica */
+    background-clip: padding-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Se o "vazamento" acontece especificamente na 2ª folha (1ª .doc-page),
+     damos um folguinha extra apenas nela. Aumente para 1mm se ainda ocorrer. */
+  .doc-stack .doc-page:first-child {
+    height: calc(297mm - 0.9mm);
+  }
+  .doc-stack .doc-page:first-child::before {
+    top: 0.45mm; bottom: 0.45mm;
+  }
+
+  /* Fidelidade de cores/tons na impressão */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
+
 
