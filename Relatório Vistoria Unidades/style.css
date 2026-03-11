@@ -237,20 +237,35 @@ footer.page-footer {
 .setor-nome { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
 .descricao { font-size: 12px; line-height: 1.5; text-align: justify; white-space: pre-wrap; }
 
+
+/* -------- Galeria de imagens (6 itens) -------- */
 .galeria {
-    margin-top: 16px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: var(--img-h) var(--img-h);
-    gap: var(--gal-gap);
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 colunas */
+  gap: var(--gal-gap);
+  /* Remover alturas “fixas” por linha.
+     Antes: grid-template-rows: var(--img-h) var(--img-h);  */
 }
 
 .galeria .item {
-    border: 1px solid var(--cinza-borda);
-    border-radius: 6px; overflow: hidden; background: #fdfdfd;
+  /* Cada item terá o mesmo formato, garantindo padronização.
+     Escolha 4/3; pode trocar para 1/1 (quadrado) ou 16/9. */
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--cinza-borda);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fdfdfd;
+  /* Evita que imagens estiquem por altura fixa */
+  height: auto;
 }
 
-.galeria img { width: 100%; height: 100%; object-fit: cover; }
+.galeria img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Corta para caber no “box” sem distorcer */
+}
+
 
 /* Impressão */
 @media print {
@@ -313,5 +328,6 @@ footer.page-footer {
     print-color-adjust: exact;
   }
 }
+
 
 
