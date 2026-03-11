@@ -86,10 +86,10 @@ function renderDocStack() {
                 galeriaHtml += `<div class="item"><img src="${src}" /></div>`;
             });
             // Preencher espaços vazios se houver menos de 6 imagens
-            for (let i = setor.imgs.length; i < 6; i++) {
-                galeriaHtml += '<div class="item empty"></div>';
-            }
-            galeriaHtml += '</div>';
+            //for (let i = setor.imgs.length; i < 6; i++) {
+                //galeriaHtml += '<div class="item empty"></div>';
+            //}
+            //galeriaHtml += '</div>';
         }
 
         page.innerHTML = `
@@ -214,4 +214,5 @@ document.addEventListener("DOMContentLoaded", () => {
     inpData.value = hoje;
     txtData.textContent = formatarDataPtBR(hoje);
 });
+
 
