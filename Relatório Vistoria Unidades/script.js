@@ -82,11 +82,11 @@ function renderDocStack() {
         let galeriaHtml = "";
         if (setor.imgs && setor.imgs.length > 0) {
             galeriaHtml = '<div class="galeria">';
-            setor.imgs.slice(0, 4).forEach(src => {
+            setor.imgs.slice(0, 6).forEach(src => {
                 galeriaHtml += `<div class="item"><img src="${src}" /></div>`;
             });
-            // Preencher espaços vazios se houver menos de 4 imagens
-            for (let i = setor.imgs.length; i < 4; i++) {
+            // Preencher espaços vazios se houver menos de 6 imagens
+            for (let i = setor.imgs.length; i < 6; i++) {
                 galeriaHtml += '<div class="item empty"></div>';
             }
             galeriaHtml += '</div>';
@@ -214,3 +214,4 @@ document.addEventListener("DOMContentLoaded", () => {
     inpData.value = hoje;
     txtData.textContent = formatarDataPtBR(hoje);
 });
+
