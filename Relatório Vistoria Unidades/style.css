@@ -207,7 +207,6 @@ header.main-header h1 {
 .page::before, .doc-page::before {
     content: ""; position: absolute; inset: 0;
     background: url('assets/tela-fundo.png') left top / cover no-repeat;
-    opacity: 0.1; z-index: 0;
 }
 
 .page-inner, .doc-page-inner {
@@ -261,3 +260,4 @@ footer.page-footer {
     .page, .doc-page { box-shadow: none; margin: 0; page-break-after: always; }
     .page::before, .doc-page::before { opacity: 1; }
 }
+
