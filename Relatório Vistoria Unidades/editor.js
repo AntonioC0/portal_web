@@ -1,9 +1,9 @@
-// ---------- Lógica do Editor ----------
+// ---------- Lógica do Editor Local ----------
 let currentVistoria = { id: null, unidade: "", data: "", setores: [], planilha: null };
 let editSectorIndex = -1;
 
-// Função para redimensionar imagens antes de salvar (otimizada para 600px para evitar estouro de limite do Firebase)
-async function resizeImage(dataUrl, maxWidth = 600, quality = 0.5) {
+// COMPRESSÃO EQUILIBRADA: 800px e 50% de qualidade (como é local, podemos ter mais qualidade)
+async function resizeImage(dataUrl, maxWidth = 800, quality = 0.5) {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -26,60 +26,11 @@ async function resizeImage(dataUrl, maxWidth = 600, quality = 0.5) {
     });
 }
 
-async function initEditor() {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    const isPrint = params.get('print') === 'true';
-
-    // Garante que o Firebase esteja pronto
-    if (typeof initFirebase === 'function') initFirebase();
-
-    if (id) {
-        console.log("Buscando vistoria específica na nuvem...");
-        
-        try {
-            // Busca APENAS a vistoria que queremos editar
-            const found = await getVistoriaById(id);
-            
-            if (found) {
-                // CORREÇÃO: Garante que setores sempre seja um array, mesmo se não houver nenhum no banco
-                currentVistoria = {
-                    ...found,
-                    setores: found.setores || []
-                };
-
-                document.getElementById('inpUnidade').value = currentVistoria.unidade || "";
-                document.getElementById('inpData').value = currentVistoria.data || "";
-                document.getElementById('txtUnidade').textContent = titleCasePtBR(currentVistoria.unidade) || "Unidade";
-                document.getElementById('txtData').textContent = formatarDataPtBR(currentVistoria.data) || "Data";
-                
-                if (currentVistoria.planilha) {
-                    document.getElementById('planilhaHint').textContent = "Planilha carregada";
-                    document.getElementById('btnRemoverPlanilha').style.display = 'inline-flex';
-                }
-                
-                renderSectorsList();
-                renderDocStack();
-
-                if (isPrint) {
-                    setTimeout(() => {
-                        window.print();
-                        window.close();
-                    }, 800);
-                }
-            } else {
-                alert("Vistoria não encontrada na nuvem.");
-            }
-        } catch (err) {
-            console.error("Erro ao buscar vistoria:", err);
-            alert("Erro ao conectar com a nuvem. Verifique sua internet.");
-        }
-    } else {
-        const hoje = new Date().toISOString().split('T')[0];
-        document.getElementById('inpData').value = hoje;
-        document.getElementById('txtData').textContent = formatarDataPtBR(hoje);
-    }
-
+function initEditor() {
+    const hoje = new Date().toISOString().split('T')[0];
+    document.getElementById('inpData').value = hoje;
+    document.getElementById('txtData').textContent = formatarDataPtBR(hoje);
+    
     setupEditorEvents();
 }
 
@@ -103,8 +54,7 @@ function setupEditorEvents() {
     });
 
     refreshListener("inpImgs", "change", () => {
-        const el = document.getElementById("inpImgs");
-        const count = el.files.length;
+        const count = document.getElementById("inpImgs").files.length;
         document.getElementById("fileHint").textContent = count > 0 ? `${count} arquivo(s) selecionado(s)` : "Nenhum arquivo selecionado";
     });
 
@@ -130,7 +80,6 @@ function setupEditorEvents() {
     refreshListener("btnAddSetor", "click", async () => {
         const nome = titleCasePtBR(document.getElementById("inpSetor").value);
         const desc = document.getElementById("inpDesc").value.trim();
-        
         if (!nome) return alert("Informe o nome do setor.");
 
         let imgs = [];
@@ -141,7 +90,6 @@ function setupEditorEvents() {
                 imgs.push(await resizeImage(raw));
             }
         } else if (editSectorIndex !== -1) {
-            // Garante que imgs seja um array mesmo na edição
             imgs = currentVistoria.setores[editSectorIndex].imgs || [];
         }
         
@@ -156,24 +104,90 @@ function setupEditorEvents() {
         renderDocStack();
     });
 
-    refreshListener("btnSalvarVistoria", "click", async () => {
+    // --- FUNÇÕES DE EXPORTAR E IMPORTAR ---
+
+    refreshListener("btnExportar", "click", () => {
         currentVistoria.unidade = document.getElementById("inpUnidade").value;
         currentVistoria.data = document.getElementById("inpData").value;
-        if (!currentVistoria.unidade) return alert("Informe a unidade antes de salvar.");
+        if (!currentVistoria.unidade) return alert("Preencha a unidade antes de exportar.");
 
-        const btn = document.getElementById("btnSalvarVistoria");
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando na nuvem...';
+        const jsonStr = JSON.stringify(currentVistoria);
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Vistoria_${currentVistoria.unidade.replace(/\s+/g, '_')}_${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
 
-        try {
-            await saveVistoria(currentVistoria);
-            alert("Vistoria salva com sucesso na nuvem!");
-            window.location.href = "index.html";
-        } catch (e) {
-            console.error(e);
-            alert("Erro ao salvar no Firebase. Verifique se as imagens não são muito pesadas.");
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save"></i> Salvar Vistoria';
+    refreshListener("inpImportar", "change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                currentVistoria = data;
+                
+                // Preencher campos
+                document.getElementById('inpUnidade').value = currentVistoria.unidade || "";
+                document.getElementById('inpData').value = currentVistoria.data || "";
+                document.getElementById('txtUnidade').textContent = titleCasePtBR(currentVistoria.unidade) || "Unidade";
+                document.getElementById('txtData').textContent = formatarDataPtBR(currentVistoria.data) || "Data";
+                
+                if (currentVistoria.planilha) {
+                    document.getElementById('planilhaHint').textContent = "Planilha carregada";
+                    document.getElementById('btnRemoverPlanilha').style.display = 'inline-flex';
+                } else {
+                    document.getElementById('planilhaHint').textContent = "Nenhuma imagem selecionada";
+                    document.getElementById('btnRemoverPlanilha').style.display = 'none';
+                }
+                
+                renderSectorsList();
+                renderDocStack();
+                alert("Dados importados com sucesso!");
+            } catch (err) {
+                alert("Erro ao ler o arquivo JSON.");
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    refreshListener("btnImprimir", "click", () => {
+        window.print();
+    });
+
+    // Lógica do Modal de Vídeo
+    const btnComoUsar = document.getElementById("btnComoUsar");
+    const videoModal = document.getElementById("videoModal");
+    const closeModal = document.getElementById("closeModal");
+    const videoPlayer = document.getElementById("tutorialVideo");
+
+    if (btnComoUsar) {
+        btnComoUsar.addEventListener("click", () => {
+            videoModal.style.display = "flex";
+        });
+    }
+
+    if (closeModal) {
+        closeModal.addEventListener("click", () => {
+            videoModal.style.display = "none";
+            videoPlayer.pause();
+            videoPlayer.currentTime = 0; // Volta o vídeo pro início ao fechar
+        });
+    }
+
+    // Fecha o modal se clicar fora do vídeo
+    window.addEventListener("click", (event) => {
+        if (event.target == videoModal) {
+            videoModal.style.display = "none";
+            videoPlayer.pause();
+            videoPlayer.currentTime = 0;
         }
     });
 }
@@ -181,15 +195,11 @@ function setupEditorEvents() {
 function renderSectorsList() {
     const list = document.getElementById("sectorsList");
     if (!list) return;
-    
-    // CORREÇÃO: Garante que setores seja tratado como array para evitar erro de .length
     const setores = currentVistoria.setores || [];
-    
     if (setores.length === 0) {
         list.innerHTML = '<div class="file-hint" style="text-align:center; padding:10px;">Nenhum setor adicionado</div>';
         return;
     }
-
     list.innerHTML = setores.map((s, i) => `
         <div class="sector-item ${editSectorIndex === i ? 'editing' : ''}">
             <span onclick="editSector(${i})" style="cursor:pointer;">${s.nome}</span>
@@ -210,11 +220,8 @@ function formatarDescricao(texto) {
 function renderDocStack() {
     const stack = document.getElementById("docStack");
     if (!stack) return;
-    
     const setores = currentVistoria.setores || [];
-    
     let html = setores.map(s => {
-        // CORREÇÃO: Garante que s.imgs seja um array antes de usar .slice()
         const imagens = s.imgs || [];
         return `
             <div class="doc-page">
@@ -230,13 +237,8 @@ function renderDocStack() {
             </div>
         `;
     }).join('');
-
     if (currentVistoria.planilha) {
-        html += `
-            <div class="page-landscape">
-                <img src="${currentVistoria.planilha}" alt="Planilha de Resumo">
-            </div>
-        `;
+        html += `<div class="page-landscape"><img src="${currentVistoria.planilha}"></div>`;
     }
     stack.innerHTML = html;
 }

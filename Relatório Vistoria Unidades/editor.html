@@ -3,22 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Vistoria Prévia</title>
+    <title>Relatório de Vistoria Prévia - Editor Local</title>
     <link rel="stylesheet" href="editor.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+    <style>
+        /* Estilo para o botão flutuante no canto inferior direito */
+        .btn-floating {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 999;
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.2s, background-color 0.2s;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-floating:hover {
+            background-color: #34495e;
+            transform: scale(1.05);
+            color: white;
+        }
+        
+        /* Estilos para o Modal de Vídeo */
+        .modal-video {
+            display: none; /* Escondido por padrão */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #000;
+            padding: 5px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        video {
+            width: 100%;
+            border-radius: 4px;
+            display: block;
+        }
+
+        /* Ajuste para não aparecer na impressão */
+        @media print {
+            .btn-floating, .btn-back, .modal-video {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body class="editor-body">
 
     <header class="main-header">
-        <a href="index.html" class="btn-back">
-            <i class="fas fa-arrow-left"></i> Voltar
-        </a>
+        <div class="header-left">
+            <a href="javascript:location.reload();" class="btn-back" title="Voltar / Limpar">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+        
         <h1>Relatório de Vistoria Prévia</h1>
         
         <div class="header-actions">
-            <button id="btnSalvarVistoria" class="btn primary" type="button">
-                <i class="fas fa-save"></i> Salvar Vistoria
+            <input type="file" id="inpImportar" accept=".json" style="display:none;" />
+            <label for="inpImportar" class="btn secondary">
+                <i class="fas fa-file-import"></i> Importar Dados
+            </label>
+
+            <button id="btnExportar" class="btn secondary" type="button">
+                <i class="fas fa-file-export"></i> Exportar Dados
+            </button>
+
+            <button id="btnImprimir" class="btn primary" type="button">
+                <i class="fas fa-print"></i> Imprimir / PDF
             </button>
         </div>
     </header>
@@ -31,7 +112,7 @@
                 <input id="inpUnidade" type="text" autocomplete="off" />
                 <label for="inpData">Data</label>
                 <input id="inpData" type="date" />
-                <button id="btnAplicar" class="btn block" type="button">Salvar capa</button>
+                <button id="btnAplicar" class="btn block" type="button">Atualizar capa</button>
             </div>
 
             <h4>Novo Setor</h4>
@@ -49,7 +130,7 @@
                 </div>
 
                 <label for="inpDesc">Descrição</label>
-                <textarea id="inpDesc" placeholder="Descreva o setor, condições, observações..."></textarea>
+                <textarea id="inpDesc" placeholder="Descreva o setor..."></textarea>
 
                 <button id="btnAddSetor" class="btn block" type="button">
                     <i class="fas fa-plus"></i> Adicionar setor
@@ -99,13 +180,24 @@
         </main>
     </div>
 
-    <!-- 1. SDK do Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- Botão Flutuante Como Usar -->
+    <button id="btnComoUsar" class="btn-floating" title="Assista ao tutorial">
+        <i class="fas fa-video"></i> Como usar
+    </button>
 
-    <!-- 2. Seus scripts -->
+    <!-- Modal de Vídeo -->
+    <div id="videoModal" class="modal-video">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times; Fechar</span>
+            <video id="tutorialVideo" controls>
+                <source src="assets/tutorial.mp4" type="video/mp4" >
+                Seu navegador não suporta vídeos.
+            </video>
+        </div>
+    </div>
+
+    <!-- Scripts (Sem Firebase) -->
     <script src="utils.js"></script>
     <script src="editor.js"></script>
-    <!-- CORREÇÃO: Removido o script inline que chamava initEditor() em duplicidade -->
 </body>
 </html>
