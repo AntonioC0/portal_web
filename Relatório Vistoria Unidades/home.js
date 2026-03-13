@@ -51,8 +51,49 @@ function downloadPdf(id) {
     window.open(`editor.html?id=${id}&print=true`, '_blank');
 }
 
+// Lógica do Modal de Vídeo (Ajustada para vídeo local)
+function setupVideoModal() {
+    const btnComoUsar = document.getElementById("btnComoUsar");
+    const modalVideo = document.getElementById("modalVideo");
+    const closeModal = document.querySelector(".close-modal");
+    const playerVideo = document.getElementById("playerVideo");
+
+    // Função para fechar e resetar o vídeo local
+    const closeAndResetVideo = () => {
+        // 1. Esconder o modal
+        modalVideo.style.display = "none";
+        
+        // 2. Pausar o vídeo e voltar para o início (0:00)
+        if (playerVideo) {
+            playerVideo.pause();          // Pausa a reprodução
+            playerVideo.currentTime = 0;  // Volta para o início
+        }
+    };
+
+    if (btnComoUsar) {
+        btnComoUsar.addEventListener("click", () => {
+            modalVideo.style.display = "flex";
+        });
+    }
+
+    if (closeModal) {
+        closeModal.addEventListener("click", (e) => {
+            e.preventDefault();
+            closeAndResetVideo();
+        });
+    }
+
+    // Fechar ao clicar fora do conteúdo do modal
+    window.addEventListener("click", (event) => {
+        if (event.target === modalVideo) {
+            closeAndResetVideo();
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     renderHome();
+    setupVideoModal();
     
     const searchInp = document.getElementById('searchInp');
     if (searchInp) {

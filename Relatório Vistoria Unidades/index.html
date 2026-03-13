@@ -14,7 +14,10 @@
         <a href="../index.html" class="btn-back">
             <i class="fas fa-arrow-left"></i> Voltar
         </a>
-        <h1>Gerenciador de Vistorias</h1>
+        <h1>Relatório de Vistoria Prévia</h1>
+        <button id="btnComoUsar" class="btn-help">
+            <i class="fas fa-question-circle"></i> Como usar?
+        </button>
     </header>
 
     <main class="home-container">
@@ -36,6 +39,20 @@
             </div>
         </div>
     </main>
+
+    <!-- Modal de Vídeo -->
+    <div id="modalVideo" class="modal-video">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="video-container">
+                <!-- Tag <video> ajustada para melhor compatibilidade -->
+                <video id="playerVideo" controls preload="auto" style="width: 100%; height: auto; display: block;">
+                    <source src="assets/tutorial.mp4" type="video/mp4">
+                    Seu navegador não suporta a reprodução de vídeos.
+                </video>
+            </div>
+        </div>
+    </div>
 
     <script src="utils.js"></script>
     <script src="home.js"></script>
