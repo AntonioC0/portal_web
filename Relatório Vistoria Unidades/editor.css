@@ -1,0 +1,251 @@
+:root {
+    --page-w: 210mm;
+    --page-h: 297mm;
+    --marg: 30mm;
+    --content-pad: 20mm;
+    --font: "Segoe UI", Arial, Helvetica, sans-serif;
+    --texto: #000;
+    --cinza-borda: #d9d9d9;
+    --img-h: 60mm;
+    --gal-gap: 6mm;
+    --sidebar-w: 280px;
+    --accent: #2f66f2;
+    --accent-2: #1d4ed8;
+    --bg: #f4f7f6;
+    --header-bg: #ffffff;
+    --border: #e5e7eb;
+    --muted: #6b7280;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: var(--font);
+    color: var(--texto);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    /* Forçar impressão de cores e imagens de fundo */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+}
+
+/* Cabeçalho Padronizado */
+header.main-header {
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    min-height: 56px;
+}
+
+.btn-back {
+    text-decoration: none;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.2s;
+    z-index: 10;
+}
+
+.btn-back:hover { color: var(--accent); }
+
+header.main-header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* Editor Styles */
+.main-container { display: flex; margin-top: 56px; }
+
+.sidebar {
+    width: var(--sidebar-w);
+    background: #fff;
+    border-right: 1px solid #e5e5e5;
+    padding: 16px;
+    height: calc(100vh - 56px);
+    position: fixed;
+    overflow-y: auto;
+}
+
+.sidebar h4 {
+    margin: 16px 0 8px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #555;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 4px;
+}
+
+.group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+
+.sidebar label { font-size: 11px; font-weight: 600; color: #444; }
+
+.sidebar input, .sidebar textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cfd3da;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; height: 34px; padding: 0 12px; border-radius: 6px;
+    border: 1px solid var(--accent); background: var(--accent); color: #fff;
+    font-weight: 700; font-size: 13px; cursor: pointer;
+}
+
+.btn.primary { background: var(--accent); }
+.btn.ghost { background: #fff; color: var(--accent); border-color: #cfd3da; }
+.btn.block { width: 100%; }
+
+.file-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 10px; border-radius: 6px; cursor: pointer;
+    border: 1px dashed var(--accent); color: #333; background: #f6f9ff;
+    font-weight: 600; font-size: 12px; width: 100%; justify-content: center;
+}
+
+.file-hint { font-size: 10px; color: #777; }
+
+.sectors-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+
+.sector-item {
+    display: flex; align-items: center; background: #fff;
+    border: 1px solid #e5e7eb; padding: 6px 10px; border-radius: 6px; gap: 8px;
+}
+
+.sector-item.editing { border-color: #16a34a; background-color: #f0fdf4; }
+
+.sector-item span { flex: 1; font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+
+.action-btn { background: none; border: none; cursor: pointer; color: #9ca3af; padding: 4px; }
+
+.workspace { margin-left: var(--sidebar-w); padding: 30px; flex: 1; display: flex; flex-direction: column; align-items: center; }
+
+.page, .doc-page {
+    width: var(--page-w); height: var(--page-h); background: #fff;
+    box-shadow: 0 8px 30px rgba(0,0,0,.08); position: relative; overflow: hidden; margin-bottom: 24px;
+}
+
+.page::before, .doc-page::before {
+    content: ""; position: absolute; inset: 0;
+    background: url('assets/tela-fundo.png') left top / cover no-repeat;
+    opacity: 0.1; z-index: 0;
+}
+
+.page-inner, .doc-page-inner { position: relative; z-index: 1; height: 100%; padding: var(--marg); display: flex; flex-direction: column; }
+
+.doc-page-inner { padding: var(--content-pad); }
+
+.center-block { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+
+.titulo { font-size: 22px; font-weight: 800; text-transform: uppercase; }
+
+.etiqueta { align-self: flex-end; margin-bottom: 18mm; text-align: right; font-size: 13px; }
+
+footer.page-footer { text-align: center; font-size: 13px; margin-top: auto; }
+
+.galeria { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: var(--gal-gap); }
+
+.galeria .item { border: 1px solid var(--cinza-borda); border-radius: 6px; overflow: hidden; height: var(--img-h); }
+
+.galeria img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Página de Planilha (Paisagem) */
+.page-landscape {
+    width: var(--page-w); /* Mantém a largura retrato na tela para visualização */
+    height: var(--page-h);
+    background: #fff;
+    box-shadow: 0 8px 30px rgba(0,0,0,.08);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10mm;
+}
+
+.page-landscape img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    /* Rotaciona a imagem na tela para você ver como ficará no PDF */
+    transform: rotate(90deg);
+    transform-origin: center;
+}
+
+@media print {
+    /* Configuração única para TODAS as páginas: Retrato */
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+    
+    header.main-header, .sidebar { display: none !important; }
+    .main-container { margin-top: 0; }
+    .workspace { margin-left: 0; padding: 0; }
+    
+    /* Todas as páginas (incluindo a de planilha) terão o mesmo tamanho vertical */
+    .page, .doc-page, .page-landscape { 
+        width: 210mm !important;
+        height: 297mm !important;
+        box-shadow: none !important; 
+        margin: 0 !important; 
+        page-break-after: always !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        position: relative;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: #fff !important;
+    }
+
+    /* A imagem da planilha será rotacionada 90 graus para ocupar a página vertical */
+    .page-landscape img {
+        width: 277mm !important; /* Altura do A4 menos margens */
+        height: 190mm !important; /* Largura do A4 menos margens */
+        max-width: none !important;
+        max-height: none !important;
+        transform: rotate(90deg);
+        transform-origin: center;
+        object-fit: contain;
+    }
+    
+    .page::before, .doc-page::before { 
+        opacity: 1 !important; 
+        visibility: visible !important;
+    }
+
+    /* Esconder fundo na página de planilha */
+    .page-landscape::before {
+        display: none !important;
+    }
+}
+
+.descricao {
+    white-space: pre-wrap;      /* Preserva espaços em branco e quebras de linha */
+    word-wrap: break-word;      /* Quebra palavras longas */
+    overflow-wrap: break-word;  /* Alternativa moderna para word-wrap */
+    line-height: 1.5;           /* Espaçamento entre linhas */
+    margin: 12px 0;             /* Espaçamento vertical */
+}

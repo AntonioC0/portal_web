@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Vistoria Prévia</title>
+    <link rel="stylesheet" href="editor.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+</head>
+<body class="editor-body">
+
+    <header class="main-header">
+        <a href="../index.html" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+        <h1>Relatório de Vistoria Prévia</h1>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <h4>Capa</h4>
+            <div class="group">
+                <label for="inpUnidade">Unidade</label>
+                <input id="inpUnidade" type="text" autocomplete="off" />
+                <label for="inpData">Data</label>
+                <input id="inpData" type="date" />
+                <button id="btnAplicar" class="btn block" type="button">Salvar capa</button>
+            </div>
+
+            <h4>Novo Setor</h4>
+            <div class="group">
+                <label for="inpSetor">Nome do setor</label>
+                <input id="inpSetor" type="text"/>
+
+                <div class="file-wrap">
+                    <label>Imagens (até 6)</label>
+                    <input id="inpImgs" type="file" accept="image/*" multiple style="display:none;" />
+                    <label for="inpImgs" class="file-btn">
+                        <i class="fas fa-camera"></i> Selecionar imagens
+                    </label>
+                    <div id="fileHint" class="file-hint">Nenhum arquivo selecionado</div>
+                </div>
+
+                <label for="inpDesc">Descrição</label>
+                <textarea id="inpDesc" placeholder="Descreva o setor, condições, observações..."></textarea>
+
+                <button id="btnAddSetor" class="btn block" type="button">
+                    <i class="fas fa-plus"></i> Adicionar setor
+                </button>
+            </div>
+
+            <h4>Setores Criados</h4>
+            <div id="sectorsList" class="sectors-list">
+                <div class="file-hint" style="text-align:center; padding:10px;">Nenhum setor adicionado</div>
+            </div>
+
+            <h4>Planilha de Resumo</h4>
+            <div class="group">
+                <div class="file-wrap">
+                    <input id="inpPlanilha" type="file" accept="image/*" style="display:none;" />
+                    <label for="inpPlanilha" class="file-btn">
+                        <i class="fas fa-file-excel"></i> Selecionar Planilha
+                    </label>
+                    <div id="planilhaHint" class="file-hint">Nenhuma imagem selecionada</div>
+                </div>
+                <button id="btnRemoverPlanilha" class="btn ghost block" type="button" style="display:none; margin-top:5px;">
+                    <i class="fas fa-times"></i> Remover Planilha
+                </button>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button id="btnSalvarVistoria" class="btn primary block" type="button">
+                    <i class="fas fa-save"></i> Salvar Vistoria
+                </button>
+            </div>
+        </aside>
+
+        <main class="workspace">
+            <section class="canvas">
+                <div class="page">
+                    <div class="page-inner">
+                        <div class="center-block">
+                            <h1 class="titulo">RELATÓRIO DE VISTORIA PRÉVIA</h1>
+                            <h3 class="unidade" id="txtUnidade">Unidade</h3>
+                        </div>
+                        <div class="etiqueta">
+                            <strong>Elaborado por:</strong><br />
+                            Departamento de Operações com Produto
+                        </div>
+                        <footer class="page-footer">
+                            Maringá, <span id="txtData">10 de Novembro de 2025</span>
+                        </footer>
+                    </div>
+                </div>
+            </section>
+
+            <section class="doc-stack" id="docStack"></section>
+        </main>
+    </div>
+
+    <script src="../utils.js"></script>
+    <script src="../editor.js"></script>
+    <script>
+        // Lógica específica do Editor
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof initEditor === 'function') initEditor();
+        });
+    </script>
+</body>
+</html>
