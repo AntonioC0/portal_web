@@ -89,7 +89,7 @@
                             Departamento de Operações com Produto
                         </div>
                         <footer class="page-footer">
-                            Maringá, <span id="txtData">10 de Novembro de 2025</span>
+                            Maringá, <span id="txtData">Data</span>
                         </footer>
                     </div>
                 </div>
@@ -99,25 +99,13 @@
         </main>
     </div>
 
-    <!-- Modal de Vídeo -->
-    <div id="modalVideo" class="modal-video">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <div class="video-container">
-                <video id="playerVideo" controls preload="auto" style="width: 100%; height: auto; display: block;">
-                    <source src="assets/tutorial.mp4" type="video/mp4">
-                    Seu navegador não suporta a reprodução de vídeos.
-                </video>
-            </div>
-        </div>
-    </div>
+    <!-- 1. SDK do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
+    <!-- 2. Seus scripts -->
     <script src="utils.js"></script>
     <script src="editor.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof initEditor === 'function') initEditor();
-        });
-    </script>
+    <!-- CORREÇÃO: Removido o script inline que chamava initEditor() em duplicidade -->
 </body>
 </html>

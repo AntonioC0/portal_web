@@ -25,82 +25,80 @@ function filesToDataUrls(fileList){
     })));
 }
 
-// ---------- Gerenciamento de Dados (IndexedDB - Suporta Grandes Volumes) ----------
-const DB_NAME = 'VistoriasDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'vistorias';
-const OLD_STORAGE_KEY = 'vistorias_data';
+// ---------- CONFIGURAÇÃO DO FIREBASE ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyCVmk9FsI3cHpQowilNtR0Zj-6LsszL2YM",
+  authDomain: "portal-web-34bf8.firebaseapp.com",
+  databaseURL: "https://portal-web-34bf8-default-rtdb.firebaseio.com",
+  projectId: "portal-web-34bf8",
+  storageBucket: "portal-web-34bf8.firebasestorage.app",
+  messagingSenderId: "436214080835",
+  appId: "1:436214080835:web:1a8d3fab348cf941ed7bf6"
+};
 
-// Função para abrir o banco de dados
-function openDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-            }
-        };
-        request.onsuccess = (event) => resolve(event.target.result);
-        request.onerror = (event) => reject(event.target.error);
-    });
+// Inicialização do Firebase
+let db;
+function initFirebase() {
+    if (typeof firebase === 'undefined') {
+        console.error("Firebase SDK não carregado!");
+        return;
+    }
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.database();
 }
 
-// Obter todas as vistorias (Assíncrona)
+// ---------- Gerenciamento de Dados (Firebase) ----------
+
 async function getVistorias() {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.getAll();
-        request.onsuccess = () => resolve(request.result || []);
-        request.onerror = () => reject(request.error);
+    if (!db) initFirebase();
+    return new Promise((resolve) => {
+        db.ref('vistorias').once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return resolve([]);
+            const list = Object.keys(data).map(key => ({
+                ...data[key],
+                id: key
+            }));
+            resolve(list);
+        });
     });
 }
 
-// Salvar uma vistoria (Assíncrona)
+async function getVistoriaById(id) {
+    if (!db) initFirebase();
+    return new Promise((resolve, reject) => {
+        db.ref('vistorias/' + id).once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return resolve(null);
+            resolve({ ...data, id: id });
+        }, (error) => reject(error));
+    });
+}
+
 async function saveVistoria(vistoria) {
-    if (!vistoria.id) {
-        vistoria.id = Date.now().toString();
-    }
-    const db = await openDB();
+    if (!db) initFirebase();
+    const id = vistoria.id || db.ref().child('vistorias').push().key;
+    vistoria.id = id;
+    
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.put(vistoria);
-        request.onsuccess = () => resolve(vistoria.id);
-        request.onerror = () => reject(request.error);
+        db.ref('vistorias/' + id).set(vistoria, (error) => {
+            if (error) reject(error);
+            else resolve(id);
+        });
     });
 }
 
-// Excluir uma vistoria (Assíncrona)
 async function deleteVistoria(id) {
-    const db = await openDB();
+    if (!db) initFirebase();
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.delete(id);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
+        db.ref('vistorias/' + id).remove((error) => {
+            if (error) reject(error);
+            else resolve();
+        });
     });
 }
 
-// Migração automática do LocalStorage antigo para o novo IndexedDB
-async function migrateData() {
-    const oldData = localStorage.getItem(OLD_STORAGE_KEY);
-    if (oldData) {
-        try {
-            const vistorias = JSON.parse(oldData);
-            for (let v of vistorias) {
-                await saveVistoria(v);
-            }
-            localStorage.removeItem(OLD_STORAGE_KEY);
-            console.log('Dados migrados com sucesso para IndexedDB!');
-        } catch (e) {
-            console.error('Erro na migração:', e);
-        }
-    }
-}
-
-// Inicia a migração ao carregar o script
-migrateData();
+// CORREÇÃO: Removido o listener de DOMContentLoaded para evitar dupla inicialização.
+// A inicialização agora é feita sob demanda ou pelos scripts principais (home.js/editor.js).

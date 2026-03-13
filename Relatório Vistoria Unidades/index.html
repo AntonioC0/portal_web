@@ -32,10 +32,10 @@
         </div>
 
         <div id="vistoriasGrid" class="vistorias-grid">
-            <!-- Cards das vistorias serão carregados aqui -->
-            <div class="empty-state">
-                <i class="fas fa-clipboard-list"></i>
-                <p>Nenhuma vistoria encontrada.</p>
+            <!-- Mensagem inicial de carregamento -->
+            <div id="loadingState" class="empty-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Carregando vistorias da nuvem...</p>
             </div>
         </div>
     </main>
@@ -45,7 +45,6 @@
         <div class="modal-content">
             <span class="close-modal">&times;</span>
             <div class="video-container">
-                <!-- Tag <video> ajustada para melhor compatibilidade -->
                 <video id="playerVideo" controls preload="auto" style="width: 100%; height: auto; display: block;">
                     <source src="assets/tutorial.mp4" type="video/mp4">
                     Seu navegador não suporta a reprodução de vídeos.
@@ -54,6 +53,12 @@
         </div>
     </div>
 
+    <!-- SDK do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+
+    <!-- Seus scripts -->
     <script src="utils.js"></script>
     <script src="home.js"></script>
 </body>

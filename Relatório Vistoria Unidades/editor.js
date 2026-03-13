@@ -2,8 +2,8 @@
 let currentVistoria = { id: null, unidade: "", data: "", setores: [], planilha: null };
 let editSectorIndex = -1;
 
-// Função para redimensionar imagens antes de salvar (otimizada para 800px)
-async function resizeImage(dataUrl, maxWidth = 800, quality = 0.6) {
+// Função para redimensionar imagens antes de salvar (otimizada para 600px para evitar estouro de limite do Firebase)
+async function resizeImage(dataUrl, maxWidth = 600, quality = 0.5) {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -31,23 +31,48 @@ async function initEditor() {
     const id = params.get('id');
     const isPrint = params.get('print') === 'true';
 
+    // Garante que o Firebase esteja pronto
+    if (typeof initFirebase === 'function') initFirebase();
+
     if (id) {
-        const vistorias = await getVistorias();
-        const found = vistorias.find(v => v.id === id);
-        if (found) {
-            currentVistoria = found;
-            document.getElementById('inpUnidade').value = currentVistoria.unidade;
-            document.getElementById('inpData').value = currentVistoria.data;
-            document.getElementById('txtUnidade').textContent = titleCasePtBR(currentVistoria.unidade) || "Unidade";
-            document.getElementById('txtData').textContent = formatarDataPtBR(currentVistoria.data) || "Data";
+        console.log("Buscando vistoria específica na nuvem...");
+        
+        try {
+            // Busca APENAS a vistoria que queremos editar
+            const found = await getVistoriaById(id);
             
-            if (currentVistoria.planilha) {
-                document.getElementById('planilhaHint').textContent = "Planilha carregada";
-                document.getElementById('btnRemoverPlanilha').style.display = 'inline-flex';
+            if (found) {
+                // CORREÇÃO: Garante que setores sempre seja um array, mesmo se não houver nenhum no banco
+                currentVistoria = {
+                    ...found,
+                    setores: found.setores || []
+                };
+
+                document.getElementById('inpUnidade').value = currentVistoria.unidade || "";
+                document.getElementById('inpData').value = currentVistoria.data || "";
+                document.getElementById('txtUnidade').textContent = titleCasePtBR(currentVistoria.unidade) || "Unidade";
+                document.getElementById('txtData').textContent = formatarDataPtBR(currentVistoria.data) || "Data";
+                
+                if (currentVistoria.planilha) {
+                    document.getElementById('planilhaHint').textContent = "Planilha carregada";
+                    document.getElementById('btnRemoverPlanilha').style.display = 'inline-flex';
+                }
+                
+                renderSectorsList();
+                renderDocStack();
+
+                if (isPrint) {
+                    setTimeout(() => {
+                        window.print();
+                        window.close();
+                    }, 800);
+                }
+            } else {
+                alert("Vistoria não encontrada na nuvem.");
             }
-            
-            renderSectorsList();
-            renderDocStack();
+        } catch (err) {
+            console.error("Erro ao buscar vistoria:", err);
+            alert("Erro ao conectar com a nuvem. Verifique sua internet.");
         }
     } else {
         const hoje = new Date().toISOString().split('T')[0];
@@ -55,28 +80,10 @@ async function initEditor() {
         document.getElementById('txtData').textContent = formatarDataPtBR(hoje);
     }
 
-    if (isPrint) {
-        setTimeout(() => {
-            window.print();
-            window.close();
-        }, 1000);
-    }
-
     setupEditorEvents();
 }
 
 function setupEditorEvents() {
-    const btnAplicar = document.getElementById("btnAplicar");
-    const btnAddSetor = document.getElementById("btnAddSetor");
-    const btnSalvarVistoria = document.getElementById("btnSalvarVistoria");
-    const inpImgs = document.getElementById("inpImgs");
-    const inpPlanilha = document.getElementById("inpPlanilha");
-    const btnRemoverPlanilha = document.getElementById("btnRemoverPlanilha");
-    const btnComoUsar = document.getElementById("btnComoUsar");
-    const modalVideo = document.getElementById("modalVideo");
-    const closeModal = document.querySelector(".close-modal");
-    const playerVideo = document.getElementById("playerVideo");
-
     const refreshListener = (id, event, callback) => {
         const el = document.getElementById(id);
         if (el) {
@@ -134,7 +141,8 @@ function setupEditorEvents() {
                 imgs.push(await resizeImage(raw));
             }
         } else if (editSectorIndex !== -1) {
-            imgs = currentVistoria.setores[editSectorIndex].imgs;
+            // Garante que imgs seja um array mesmo na edição
+            imgs = currentVistoria.setores[editSectorIndex].imgs || [];
         }
         
         if (editSectorIndex === -1) {
@@ -152,40 +160,20 @@ function setupEditorEvents() {
         currentVistoria.unidade = document.getElementById("inpUnidade").value;
         currentVistoria.data = document.getElementById("inpData").value;
         if (!currentVistoria.unidade) return alert("Informe a unidade antes de salvar.");
-        
+
+        const btn = document.getElementById("btnSalvarVistoria");
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando na nuvem...';
+
         try {
             await saveVistoria(currentVistoria);
-            alert("Vistoria salva com sucesso!");
+            alert("Vistoria salva com sucesso na nuvem!");
             window.location.href = "index.html";
         } catch (e) {
             console.error(e);
-            alert("Erro ao salvar: O relatório está muito grande. Tente remover algumas imagens.");
-        }
-    });
-
-    if (btnComoUsar) {
-        btnComoUsar.addEventListener("click", () => {
-            modalVideo.style.display = "flex";
-        });
-    }
-
-    if (closeModal) {
-        closeModal.addEventListener("click", () => {
-            modalVideo.style.display = "none";
-            if (playerVideo.pause) {
-                playerVideo.pause();
-                playerVideo.currentTime = 0;
-            }
-        });
-    }
-
-    window.addEventListener("click", (event) => {
-        if (event.target === modalVideo) {
-            modalVideo.style.display = "none";
-            if (playerVideo.pause) {
-                playerVideo.pause();
-                playerVideo.currentTime = 0;
-            }
+            alert("Erro ao salvar no Firebase. Verifique se as imagens não são muito pesadas.");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Salvar Vistoria';
         }
     });
 }
@@ -194,12 +182,15 @@ function renderSectorsList() {
     const list = document.getElementById("sectorsList");
     if (!list) return;
     
-    if (currentVistoria.setores.length === 0) {
+    // CORREÇÃO: Garante que setores seja tratado como array para evitar erro de .length
+    const setores = currentVistoria.setores || [];
+    
+    if (setores.length === 0) {
         list.innerHTML = '<div class="file-hint" style="text-align:center; padding:10px;">Nenhum setor adicionado</div>';
         return;
     }
 
-    list.innerHTML = currentVistoria.setores.map((s, i) => `
+    list.innerHTML = setores.map((s, i) => `
         <div class="sector-item ${editSectorIndex === i ? 'editing' : ''}">
             <span onclick="editSector(${i})" style="cursor:pointer;">${s.nome}</span>
             <div class="sector-actions">
@@ -213,30 +204,32 @@ function renderSectorsList() {
 
 function formatarDescricao(texto) {
     if (!texto) return '';
-    return texto
-        .split('\n')
-        .map(linha => linha.trim())
-        .filter(linha => linha.length > 0)
-        .join('<br>');
+    return texto.split('\n').map(l => l.trim()).filter(l => l.length > 0).join('<br>');
 }
 
 function renderDocStack() {
     const stack = document.getElementById("docStack");
     if (!stack) return;
     
-    let html = currentVistoria.setores.map(s => `
-        <div class="doc-page">
-            <div class="doc-page-inner">
-                <div class="setor-cabecalho">
-                    <h2 class="setor-nome">${s.nome}</h2>
-                    <p class="descricao">${formatarDescricao(s.desc)}</p>
-                </div>
-                <div class="galeria">
-                    ${s.imgs.slice(0, 6).map(img => `<div class="item"><img src="${img}"></div>`).join('')}
+    const setores = currentVistoria.setores || [];
+    
+    let html = setores.map(s => {
+        // CORREÇÃO: Garante que s.imgs seja um array antes de usar .slice()
+        const imagens = s.imgs || [];
+        return `
+            <div class="doc-page">
+                <div class="doc-page-inner">
+                    <div class="setor-cabecalho">
+                        <h2 class="setor-nome">${s.nome}</h2>
+                        <p class="descricao">${formatarDescricao(s.desc)}</p>
+                    </div>
+                    <div class="galeria">
+                        ${imagens.slice(0, 6).map(img => `<div class="item"><img src="${img}"></div>`).join('')}
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     if (currentVistoria.planilha) {
         html += `
@@ -245,7 +238,6 @@ function renderDocStack() {
             </div>
         `;
     }
-
     stack.innerHTML = html;
 }
 
