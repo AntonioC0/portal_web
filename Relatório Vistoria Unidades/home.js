@@ -1,9 +1,10 @@
 // ---------- Lógica da Home ----------
-function renderHome(filter = "") {
+async function renderHome(filter = "") {
     const grid = document.getElementById('vistoriasGrid');
     if (!grid) return;
 
-    const vistorias = getVistorias().filter(v => 
+    const allVistorias = await getVistorias();
+    const vistorias = allVistorias.filter(v => 
         v.unidade.toLowerCase().includes(filter.toLowerCase())
     );
 
@@ -36,9 +37,9 @@ function renderHome(filter = "") {
     `).join('');
 }
 
-function confirmDelete(id) {
+async function confirmDelete(id) {
     if (confirm("Deseja realmente excluir esta vistoria?")) {
-        deleteVistoria(id);
+        await deleteVistoria(id);
         renderHome(document.getElementById('searchInp')?.value || "");
     }
 }
@@ -51,22 +52,18 @@ function downloadPdf(id) {
     window.open(`editor.html?id=${id}&print=true`, '_blank');
 }
 
-// Lógica do Modal de Vídeo (Ajustada para vídeo local)
+// Lógica do Modal de Vídeo
 function setupVideoModal() {
     const btnComoUsar = document.getElementById("btnComoUsar");
     const modalVideo = document.getElementById("modalVideo");
     const closeModal = document.querySelector(".close-modal");
     const playerVideo = document.getElementById("playerVideo");
 
-    // Função para fechar e resetar o vídeo local
     const closeAndResetVideo = () => {
-        // 1. Esconder o modal
         modalVideo.style.display = "none";
-        
-        // 2. Pausar o vídeo e voltar para o início (0:00)
         if (playerVideo) {
-            playerVideo.pause();          // Pausa a reprodução
-            playerVideo.currentTime = 0;  // Volta para o início
+            playerVideo.pause();
+            playerVideo.currentTime = 0;
         }
     };
 
@@ -83,7 +80,6 @@ function setupVideoModal() {
         });
     }
 
-    // Fechar ao clicar fora do conteúdo do modal
     window.addEventListener("click", (event) => {
         if (event.target === modalVideo) {
             closeAndResetVideo();
@@ -91,8 +87,8 @@ function setupVideoModal() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    renderHome();
+document.addEventListener('DOMContentLoaded', async () => {
+    await renderHome();
     setupVideoModal();
     
     const searchInp = document.getElementById('searchInp');

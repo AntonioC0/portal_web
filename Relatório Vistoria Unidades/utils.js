@@ -11,8 +11,10 @@ function titleCasePtBR(texto){
 
 function formatarDataPtBR(iso){
     if(!iso) return "";
-    const [y,m,d] = iso.split("-").map(Number);
-    if(!y||!m||!d) return "";
+    const parts = iso.split("-").map(Number);
+    if(parts.length !== 3) return iso;
+    const [y,m,d] = parts;
+    if(!y||!m||!d) return iso;
     return `${d} de ${capFirst(meses[m-1])} de ${y}`;
 }
 
@@ -23,29 +25,82 @@ function filesToDataUrls(fileList){
     })));
 }
 
-// ---------- Gerenciamento de Dados (LocalStorage) ----------
-const STORAGE_KEY = 'vistorias_data';
+// ---------- Gerenciamento de Dados (IndexedDB - Suporta Grandes Volumes) ----------
+const DB_NAME = 'VistoriasDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'vistorias';
+const OLD_STORAGE_KEY = 'vistorias_data';
 
-function getVistorias() {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+// Função para abrir o banco de dados
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
 }
 
-function saveVistoria(vistoria) {
-    const vistorias = getVistorias();
-    if (vistoria.id) {
-        const index = vistorias.findIndex(v => v.id === vistoria.id);
-        if (index !== -1) vistorias[index] = vistoria;
-        else vistorias.push(vistoria);
-    } else {
+// Obter todas as vistorias (Assíncrona)
+async function getVistorias() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Salvar uma vistoria (Assíncrona)
+async function saveVistoria(vistoria) {
+    if (!vistoria.id) {
         vistoria.id = Date.now().toString();
-        vistorias.push(vistoria);
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(vistorias));
-    return vistoria.id;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put(vistoria);
+        request.onsuccess = () => resolve(vistoria.id);
+        request.onerror = () => reject(request.error);
+    });
 }
 
-function deleteVistoria(id) {
-    const vistorias = getVistorias().filter(v => v.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(vistorias));
+// Excluir uma vistoria (Assíncrona)
+async function deleteVistoria(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
 }
+
+// Migração automática do LocalStorage antigo para o novo IndexedDB
+async function migrateData() {
+    const oldData = localStorage.getItem(OLD_STORAGE_KEY);
+    if (oldData) {
+        try {
+            const vistorias = JSON.parse(oldData);
+            for (let v of vistorias) {
+                await saveVistoria(v);
+            }
+            localStorage.removeItem(OLD_STORAGE_KEY);
+            console.log('Dados migrados com sucesso para IndexedDB!');
+        } catch (e) {
+            console.error('Erro na migração:', e);
+        }
+    }
+}
+
+// Inicia a migração ao carregar o script
+migrateData();

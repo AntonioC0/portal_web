@@ -2,17 +2,40 @@
 let currentVistoria = { id: null, unidade: "", data: "", setores: [], planilha: null };
 let editSectorIndex = -1;
 
-function initEditor() {
+// Função para redimensionar imagens antes de salvar (otimizada para 800px)
+async function resizeImage(dataUrl, maxWidth = 800, quality = 0.6) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = dataUrl;
+    });
+}
+
+async function initEditor() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     const isPrint = params.get('print') === 'true';
 
     if (id) {
-        const vistorias = getVistorias();
+        const vistorias = await getVistorias();
         const found = vistorias.find(v => v.id === id);
         if (found) {
             currentVistoria = found;
-            // Preencher campos
             document.getElementById('inpUnidade').value = currentVistoria.unidade;
             document.getElementById('inpData').value = currentVistoria.data;
             document.getElementById('txtUnidade').textContent = titleCasePtBR(currentVistoria.unidade) || "Unidade";
@@ -49,98 +72,122 @@ function setupEditorEvents() {
     const inpImgs = document.getElementById("inpImgs");
     const inpPlanilha = document.getElementById("inpPlanilha");
     const btnRemoverPlanilha = document.getElementById("btnRemoverPlanilha");
+    const btnComoUsar = document.getElementById("btnComoUsar");
+    const modalVideo = document.getElementById("modalVideo");
+    const closeModal = document.querySelector(".close-modal");
+    const playerVideo = document.getElementById("playerVideo");
 
-    // BUG FIX 1: Remover listeners antigos antes de adicionar novos
-    // Clonar e substituir para remover todos os listeners
-    if (btnAplicar) {
-        const newBtnAplicar = btnAplicar.cloneNode(true);
-        btnAplicar.parentNode.replaceChild(newBtnAplicar, btnAplicar);
-        newBtnAplicar.addEventListener("click", () => {
-            currentVistoria.unidade = document.getElementById("inpUnidade").value;
-            currentVistoria.data = document.getElementById("inpData").value;
-            document.getElementById('txtUnidade').textContent = titleCasePtBR(currentVistoria.unidade) || "Unidade";
-            document.getElementById('txtData').textContent = formatarDataPtBR(currentVistoria.data) || "Data";
-        });
-    }
+    const refreshListener = (id, event, callback) => {
+        const el = document.getElementById(id);
+        if (el) {
+            const newEl = el.cloneNode(true);
+            el.parentNode.replaceChild(newEl, el);
+            newEl.addEventListener(event, callback);
+            return newEl;
+        }
+        return null;
+    };
 
-    if (inpImgs) {
-        const newInpImgs = inpImgs.cloneNode(true);
-        inpImgs.parentNode.replaceChild(newInpImgs, inpImgs);
-        newInpImgs.addEventListener("change", () => {
-            const count = newInpImgs.files.length;
-            document.getElementById("fileHint").textContent = count > 0 ? `${count} arquivo(s) selecionado(s)` : "Nenhum arquivo selecionado";
-        });
-    }
+    refreshListener("btnAplicar", "click", () => {
+        currentVistoria.unidade = document.getElementById("inpUnidade").value;
+        currentVistoria.data = document.getElementById("inpData").value;
+        document.getElementById('txtUnidade').textContent = titleCasePtBR(currentVistoria.unidade) || "Unidade";
+        document.getElementById('txtData').textContent = formatarDataPtBR(currentVistoria.data) || "Data";
+    });
 
-    if (inpPlanilha) {
-        const newInpPlanilha = inpPlanilha.cloneNode(true);
-        inpPlanilha.parentNode.replaceChild(newInpPlanilha, inpPlanilha);
-        newInpPlanilha.addEventListener("change", async () => {
-            if (newInpPlanilha.files.length > 0) {
-                const urls = await filesToDataUrls(newInpPlanilha.files);
-                currentVistoria.planilha = urls[0];
-                document.getElementById('planilhaHint').textContent = "Planilha selecionada";
-                document.getElementById('btnRemoverPlanilha').style.display = 'inline-flex';
-                renderDocStack();
-            }
-        });
-    }
+    refreshListener("inpImgs", "change", () => {
+        const el = document.getElementById("inpImgs");
+        const count = el.files.length;
+        document.getElementById("fileHint").textContent = count > 0 ? `${count} arquivo(s) selecionado(s)` : "Nenhum arquivo selecionado";
+    });
 
-    if (btnRemoverPlanilha) {
-        const newBtnRemoverPlanilha = btnRemoverPlanilha.cloneNode(true);
-        btnRemoverPlanilha.parentNode.replaceChild(newBtnRemoverPlanilha, btnRemoverPlanilha);
-        newBtnRemoverPlanilha.addEventListener("click", () => {
-            currentVistoria.planilha = null;
-            document.getElementById("inpPlanilha").value = "";
-            document.getElementById('planilhaHint').textContent = "Nenhuma imagem selecionada";
-            newBtnRemoverPlanilha.style.display = 'none';
+    refreshListener("inpPlanilha", "change", async () => {
+        const el = document.getElementById("inpPlanilha");
+        if (el.files.length > 0) {
+            const urls = await filesToDataUrls(el.files);
+            currentVistoria.planilha = await resizeImage(urls[0], 1200, 0.7);
+            document.getElementById('planilhaHint').textContent = "Planilha selecionada";
+            document.getElementById('btnRemoverPlanilha').style.display = 'inline-flex';
             renderDocStack();
-        });
-    }
+        }
+    });
 
-    if (btnAddSetor) {
-        const newBtnAddSetor = btnAddSetor.cloneNode(true);
-        btnAddSetor.parentNode.replaceChild(newBtnAddSetor, btnAddSetor);
-        newBtnAddSetor.addEventListener("click", async () => {
-            const nome = titleCasePtBR(document.getElementById("inpSetor").value);
-            const desc = document.getElementById("inpDesc").value.trim();
-            
-            if (!nome) return alert("Informe o nome do setor.");
+    refreshListener("btnRemoverPlanilha", "click", () => {
+        currentVistoria.planilha = null;
+        document.getElementById("inpPlanilha").value = "";
+        document.getElementById('planilhaHint').textContent = "Nenhuma imagem selecionada";
+        document.getElementById('btnRemoverPlanilha').style.display = 'none';
+        renderDocStack();
+    });
 
-            let imgs = [];
-            const inpImgsElement = document.getElementById("inpImgs");
-            if (inpImgsElement.files.length > 0) {
-                imgs = await filesToDataUrls(inpImgsElement.files);
-            } else if (editSectorIndex !== -1) {
-                imgs = currentVistoria.setores[editSectorIndex].imgs;
+    refreshListener("btnAddSetor", "click", async () => {
+        const nome = titleCasePtBR(document.getElementById("inpSetor").value);
+        const desc = document.getElementById("inpDesc").value.trim();
+        
+        if (!nome) return alert("Informe o nome do setor.");
+
+        let imgs = [];
+        const inpImgsElement = document.getElementById("inpImgs");
+        if (inpImgsElement.files.length > 0) {
+            const rawImgs = await filesToDataUrls(inpImgsElement.files);
+            for (let raw of rawImgs) {
+                imgs.push(await resizeImage(raw));
             }
-            
-            if (editSectorIndex === -1) {
-                currentVistoria.setores.push({ nome, desc, imgs });
-            } else {
-                currentVistoria.setores[editSectorIndex] = { nome, desc, imgs };
-            }
-            
-            resetSectorForm();
-            renderSectorsList();
-            renderDocStack();
-        });
-    }
+        } else if (editSectorIndex !== -1) {
+            imgs = currentVistoria.setores[editSectorIndex].imgs;
+        }
+        
+        if (editSectorIndex === -1) {
+            currentVistoria.setores.push({ nome, desc, imgs });
+        } else {
+            currentVistoria.setores[editSectorIndex] = { nome, desc, imgs };
+        }
+        
+        resetSectorForm();
+        renderSectorsList();
+        renderDocStack();
+    });
 
-    if (btnSalvarVistoria) {
-        const newBtnSalvarVistoria = btnSalvarVistoria.cloneNode(true);
-        btnSalvarVistoria.parentNode.replaceChild(newBtnSalvarVistoria, btnSalvarVistoria);
-        newBtnSalvarVistoria.addEventListener("click", () => {
-            currentVistoria.unidade = document.getElementById("inpUnidade").value;
-            currentVistoria.data = document.getElementById("inpData").value;
-            
-            if (!currentVistoria.unidade) return alert("Informe a unidade antes de salvar.");
-            
-            saveVistoria(currentVistoria);
+    refreshListener("btnSalvarVistoria", "click", async () => {
+        currentVistoria.unidade = document.getElementById("inpUnidade").value;
+        currentVistoria.data = document.getElementById("inpData").value;
+        if (!currentVistoria.unidade) return alert("Informe a unidade antes de salvar.");
+        
+        try {
+            await saveVistoria(currentVistoria);
             alert("Vistoria salva com sucesso!");
             window.location.href = "index.html";
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao salvar: O relatório está muito grande. Tente remover algumas imagens.");
+        }
+    });
+
+    if (btnComoUsar) {
+        btnComoUsar.addEventListener("click", () => {
+            modalVideo.style.display = "flex";
         });
     }
+
+    if (closeModal) {
+        closeModal.addEventListener("click", () => {
+            modalVideo.style.display = "none";
+            if (playerVideo.pause) {
+                playerVideo.pause();
+                playerVideo.currentTime = 0;
+            }
+        });
+    }
+
+    window.addEventListener("click", (event) => {
+        if (event.target === modalVideo) {
+            modalVideo.style.display = "none";
+            if (playerVideo.pause) {
+                playerVideo.pause();
+                playerVideo.currentTime = 0;
+            }
+        }
+    });
 }
 
 function renderSectorsList() {
@@ -164,7 +211,6 @@ function renderSectorsList() {
     `).join('');
 }
 
-// BUG FIX 2: Função auxiliar para converter quebras de linha em <br>
 function formatarDescricao(texto) {
     if (!texto) return '';
     return texto
@@ -192,7 +238,6 @@ function renderDocStack() {
         </div>
     `).join('');
 
-    // Adicionar página de planilha se existir
     if (currentVistoria.planilha) {
         html += `
             <div class="page-landscape">
